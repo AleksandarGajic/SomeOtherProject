@@ -31,7 +31,7 @@ app.configure(function() {
     app.use(cors);
     app.use(app.router);
 
-    app.all("/*", function(req, res, next) {
+    app.get("/*", function(req, res, next) {
         if (app._router && app._router.stack) {
              for (var i = 0; i < app._router.stack.length; i++) {
                 var route = app._router.stack[i].route;
@@ -68,6 +68,7 @@ app.post('/social/facebook/getProfile', social.GetFacebookProfile.bind(social));
 app.post('/social/facebook/verify_credentials', social.GetFacebookProfile.bind(social));
 app.post('/social/facebook/get_credentials', social.FacebookGetCredentials.bind(social));
 app.post('/social/facebook/share', social.FacebookShare.bind(social));
+app.post('/', function(req, res) { res.send(200) });
 app.get('/', function(req, res){
     res.sendfile('index.html');
 });
