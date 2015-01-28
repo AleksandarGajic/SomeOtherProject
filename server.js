@@ -31,8 +31,8 @@ app.configure(function() {
     app.use(app.router);
 
     app.all("/*", function(req, res, next) {
-        for (var i = 0; i < Application._router.stack.length; i++) {
-            var route = Application._router.stack[i].route;
+        for (var i = 0; i < app._router.stack.length; i++) {
+            var route = app._router.stack[i].route;
             if (route && route.path == req.path)
                 return next();
         };
