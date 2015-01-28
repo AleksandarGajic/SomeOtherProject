@@ -1,0 +1,4 @@
+-r should
+--recursive
+-R spec
+-u bdd
