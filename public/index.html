@@ -7,6 +7,7 @@
 		<script src="./js/lib/jquery.min.js" type="text/javascript"></script>
 		<script src="./js/lib/socket.io.min.js" type="text/javascript"></script>
 		<script src="./js/game.js" type="text/javascript"></script>
+		<script src="//connect.facebook.net/en_US/sdk.js"></script>
 	</head>
 	<body>
 		<canvas id="canvas" width="450" height="450"></canvas>
@@ -15,6 +16,23 @@
 			<p class="status"></p>
 		</div>
 		<script>
+		function onStatusChange(response) {
+		if( response.status != 'connected' ) {
+			login(loginCallback);
+		} 
+		
+		function loginCallback(response) {
+		  console.log('loginCallback',response);
+			  if(response.status != 'connected') {
+				top.location.href = 'https://www.facebook.com/appcenter/YOUR_APP_NAMESPACE';
+			  }
+			}
+		}
+		
+		function onAuthResponseChange(response) {
+		  console.log('onAuthResponseChange', response);
+		}
+
 		window.fbAsyncInit = function() {
 			FB.init({
 			appId      : '131051383772578',
@@ -23,6 +41,8 @@
 			});
 		
 			// ADD ADDITIONAL FACEBOOK CODE HERE
+			FB.Event.subscribe('auth.authResponseChange', onAuthResponseChange);
+			FB.Event.subscribe('auth.statusChange', onStatusChange);
 		};
 		
 		(function(d, s, id){

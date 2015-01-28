@@ -69,7 +69,7 @@ app.post('/social/facebook/verify_credentials', social.GetFacebookProfile.bind(s
 app.post('/social/facebook/get_credentials', social.FacebookGetCredentials.bind(social));
 app.post('/social/facebook/share', social.FacebookShare.bind(social));
 app.post('/', function(req, res) {
-    res.sendfile('index.html');
+    res.send(200);
 });
 app.get('/', function(req, res){
     res.sendfile('index.html');
