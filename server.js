@@ -23,6 +23,7 @@ io.configure(function() {
 
 app.configure(function() {
     app.set('port', process.env.PORT || 3000);
+    app.set('ver', '0.1');
     app.use(express.static(__dirname + '/public'));
     app.use(express.favicon());
     app.use(express.logger('dev'));
@@ -31,10 +32,12 @@ app.configure(function() {
     app.use(app.router);
 
     app.all("/*", function(req, res, next) {
-        for (var i = 0; i < app._router.stack.length; i++) {
-            var route = app._router.stack[i].route;
-            if (route && route.path == req.path)
-                return next();
+        if (app._router && app._router.stack) {
+             for (var i = 0; i < app._router.stack.length; i++) {
+                var route = app._router.stack[i].route;
+                if (route && route.path == req.path)
+                    return next();
+            }
         };
 
         res.sendFile(__dirname + '/public/index.html');
