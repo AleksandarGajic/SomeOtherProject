@@ -12,7 +12,7 @@
 		score,
 		package = -1,
 		details = {resources:"socket.io"}, 
-		socket = io.connect("http://192.168.0.87:3000/", details),
+		socket = io.connect("https://snake-wars.herokuapp.com/", details),
 		facebookId = Math.floor(Math.random() * 10000),
 		snake_array, //an array of cells to make up the snake
 		snake_arrey_player_two;
