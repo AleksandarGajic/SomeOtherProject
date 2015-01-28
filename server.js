@@ -23,11 +23,22 @@ io.configure(function() {
 
 app.configure(function() {
     app.set('port', process.env.PORT || 3000);
+    app.use(express.static(__dirname + '/public'));
     app.use(express.favicon());
     app.use(express.logger('dev'));
     app.use(express.methodOverride());
     app.use(cors);
     app.use(app.router);
+
+    app.all("/*", function(req, res, next) {
+        for (var i = 0; i < Application._router.stack.length; i++) {
+            var route = Application._router.stack[i].route;
+            if (route && route.path == req.path)
+                return next();
+        };
+
+        res.sendFile(__dirname + '/public/index.html');
+    });
 });
 
 if ('production' == app.get('env')) {
@@ -54,6 +65,9 @@ app.post('/social/facebook/getProfile', social.GetFacebookProfile.bind(social));
 app.post('/social/facebook/verify_credentials', social.GetFacebookProfile.bind(social));
 app.post('/social/facebook/get_credentials', social.FacebookGetCredentials.bind(social));
 app.post('/social/facebook/share', social.FacebookShare.bind(social));
+app.get('/', function(req, res){
+    res.sendfile('index.html');
+});
 
 server.listen(app.get('port'), function(){
     console.log("Express server listening on port " + app.get('port'));
