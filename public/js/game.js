@@ -1,5 +1,6 @@
 (function ($) {
 	var cw = 10,
+        gameStartTimer = null,
 		box_size = 45,
 		speed = 50,
 		roomIdClient = null,
@@ -15,7 +16,7 @@
 		facebookId = Math.floor(Math.random() * 10000),
 		snake_array, //an array of cells to make up the snake
 		snake_arrey_player_two;
-		
+	
 	function init()
 	{
 		d = "right"; //default direction
@@ -86,15 +87,21 @@
 			ctx.fillStyle = "black";
 			ctx.fillText("Game Over Player 2 wins!!", 10, 50);
 			ctx.fill();
+            $('.status').text('');
+            $('.start-game').show();
+            $('.main-screen').show();
 		}
 		
 		if(nx2 == -1 || nx2 == w/cw || ny2 == -1 || ny2 == h/cw || check_collision(nx2, ny2, snake_arrey_player_two) || check_collision(nx2, ny2, snake_array))
-		{
+        {
 			//restart game
 			clearInterval(game_loop);
 			ctx.fillStyle = "black";
 			ctx.fillText("Game Over. Player 1 wins!!", 10, 50);
 			ctx.fill();
+            $('.status').text('');
+            $('.start-game').show();
+            $('.main-screen').show();
 		}
 		
 		//Player 1 eats food
@@ -153,14 +160,20 @@
 	
 	function startGame() {
 		$('.status').text(countDown).css({fontSize: '50px', color: player ? 'Blue' : 'Red'});
-		setTimeout(function () {
+        if (gameStartTimer) {
+            clearTimeout(gameStartTimer);
+        }
+
+		gameStartTimer = setTimeout(function () {
 			countDown--;
 			$('.status').text(countDown);
 			if (countDown == 0) {
+                clearTimeout(gameStartTimer);
 				$('.status').text('Go...');
 				setTimeout(function () {
 					$('.main-screen').hide();
 					$("#canvas").show();
+                    countDown = 3;
 					init();
 				}, 1000);
 				
@@ -241,6 +254,8 @@ $(document).ready(function(){
 		w = $("#canvas").width(),
 		h = $("#canvas").height();
 	$("#canvas").hide();
+
+    function initSocket() {
 	  socket.on("connect", function() {        
 		$('a.start-game').click(function () {
 			$(this).hide();
@@ -260,9 +275,10 @@ $(document).ready(function(){
 			});
 		});
       });
-    	
+    }
 
-	
+    initSocket();
+
 	$(document).keydown(function(e){
 		var key = e.which;
 		var status = '';
