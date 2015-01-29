@@ -1,7 +1,6 @@
 var express = require('express'),
     app = express(),
     server = require('http').createServer(app),
-    Social = require('./lib/social'),
     io = require('socket.io').listen(server),
     Game = require('./lib/game');
 
@@ -56,18 +55,9 @@ var config = {
             client_secret: 'b535c76f81d6adc1dd3af813fbeafc94',
             grant_type: 'client_credentials'
         }
-    },
-    social = new Social(config),
+    }
     game = new Game();
 
-
-app.get('/social/facebook/signin', social.FacebookSignin.bind(social));
-app.get('/social/facebook/signin_callback', social.FacebookSigninCallback.bind(social));
-app.post('/social/facebook/signout', social.FacebookSignout.bind(social));
-app.post('/social/facebook/getProfile', social.GetFacebookProfile.bind(social));
-app.post('/social/facebook/verify_credentials', social.GetFacebookProfile.bind(social));
-app.post('/social/facebook/get_credentials', social.FacebookGetCredentials.bind(social));
-app.post('/social/facebook/share', social.FacebookShare.bind(social));
 
 app.post('/', function(req, res, next){
     res.sendfile(__dirname + '/public/index.html')
@@ -81,12 +71,11 @@ var clients = {};
 var rooms = {};
 
 game.on('pair', function (data) {
-    console.log(data);
     if (data && data.data) {
         data = data.data;
         if (data.Player1Id && data.Player2Id && data.RoomId && clients[data.Player1Id] && clients[data.Player2Id]) {
-            clients[data.Player1Id].emit('pair', data.RoomId);
-            clients[data.Player2Id].emit('pair', data.RoomId);
+            clients[data.Player1Id].emit('pair', data);
+            clients[data.Player2Id].emit('pair', data);
         }
     }
 });
@@ -98,12 +87,11 @@ game.on('status', function (data) {
 });
 
 io.sockets.on('connection', function (socket) {
-
-    socket.on('handshake', function (clientId) {
-        if (clientId) {
-            this.store.data.clientId = clientId;
-            clients[clientId] = this;
-            game.MakeGame(clientId);
+    socket.on('handshake', function (client) {
+        if (client) {
+            this.store.data.clientId = client.Id;
+            clients[client.Id] = this;
+            game.MakeGame(client);
         }
     });
 
