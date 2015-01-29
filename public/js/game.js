@@ -16,8 +16,8 @@ window.Snake = window.Snake || {};
             food: 0,
             score: 0,
             packageNo: -1,
-            //socket: io.connect("https://snake-wars.herokuapp.com/", { resources: "socket.io" }),
-            socket: io.connect("http://192.168.0.87:3000", { resources: "socket.io" }),
+            socket: io.connect("https://snake-wars.herokuapp.com/", { resources: "socket.io" }),
+            //socket: io.connect("http://192.168.0.87:3000", { resources: "socket.io" }),
             snake_array: [], //an array of cells to make up the snake
             snake_arrey_player_two: []
         }
