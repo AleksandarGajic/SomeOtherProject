@@ -86,6 +86,12 @@ game.on('status', function (data) {
     }
 });
 
+game.on('messageUpdate', function (data) {
+    if (data && data.id) {
+        io.sockets.in(data.id).emit('messageUpdate', data.message);
+    }
+});
+
 io.sockets.on('connection', function (socket) {
     socket.on('handshake', function (client) {
         if (client) {
@@ -97,6 +103,11 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('updateStatus', function (data) {
         game.UpdateStatus(data);
+    })
+
+    socket.on('sendMessage', function (data) {
+        console.log(data);
+        game.SendMessage(data);
     })
 
     socket.on('join', function (data) {

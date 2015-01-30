@@ -16,8 +16,6 @@ window.Snake = window.Snake || {};
         }
 
         model.loadingFinnished = function (response) {
-            console.log(response);
-
             model.playersInfo = {
                 Id: response.id,
                 Name: response.name
