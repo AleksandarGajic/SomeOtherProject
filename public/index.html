@@ -6,10 +6,18 @@
 		<!-- Jquery -->
 		<script src="./js/lib/jquery.min.js" type="text/javascript"></script>
 		<script src="./js/lib/socket.io.min.js" type="text/javascript"></script>
+        <script src="./js/lib/socket.io.min.js" type="text/javascript"></script>
+        <script src="./js/lib/knockout.js" type="text/javascript"></script>
         <script src="./js/common/common.js"></script>
         <script src="./js/social/social.js"></script>
         <script src="./js/game.js" type="text/javascript"></script>
         <style>
+            .player img {
+                border: 4px solid Blue;
+            }
+            .player.two img {
+                border: 4px solid Red;
+            }
             .game-screen {
                 width: 750px;
             }
@@ -20,18 +28,22 @@
         </style>
 	</head>
 	<body>
-        <div class="game-screen">
+        <div class="game-screen" style="display: none;">
 		    <canvas id="canvas" width="450" height="450"></canvas>
-            <div class="player1">
-                <h3>Player1</h3>
+            <div class="player">
+                <img data-bind="attr: { src: player1Info().Image }"/>
+                <h2 data-bind="text: player1Info().Name"></h2>
             </div>
-            <div class="player2">
-                <h3>Player2</h3>
+            <div class="player two">
+                <img data-bind="attr: { src: $root.player2Info().Image }"/>
+                <h2 data-bind="text: $root.player2Info().Name"></h2>
             </div>
             <div class="chat">
-                <ul id="chat-screen"></ul>
-                <input type="text"/>
-                <a href="javascript:;" class="send-message" >Send Message</a>
+                <ul id="chat-screen" data-bind="foreach: chatMessages">
+                    <li data-bind="html: $data"></li>
+                </ul>
+                <input type="text" data-bind="value: messageText"/>
+                <a href="javascript:;" class="send-message" data-bind="click: sendMessageClick">Send Message</a>
             </div>
         </div>
 		<div class="main-screen">

@@ -74,7 +74,9 @@ game.on('pair', function (data) {
     if (data && data.data) {
         data = data.data;
         if (data.Player1Id && data.Player2Id && data.RoomId && clients[data.Player1Id] && clients[data.Player2Id]) {
+            data.Player = 0;
             clients[data.Player1Id].emit('pair', data);
+            data.Player = 1;
             clients[data.Player2Id].emit('pair', data);
         }
     }

@@ -2,6 +2,10 @@ window.Snake = window.Snake || {};
 (function ($) {
     Snake.Game = function () {
         var model = {
+            messageText: ko.observable(''),
+            chatMessages: ko.observableArray([]),
+            player1Info: ko.observable({}),
+            player2Info: ko.observable({}),
             cw: 10,
             gameData: {},
             gameStartTimer: null,
@@ -55,6 +59,8 @@ window.Snake = window.Snake || {};
 
         //Lets paint the snake now
         model.paint = function () {
+            //check for update
+
             //To avoid the snake trail we need to paint the BG on every frame
             //Lets paint the canvas now
             ctx.fillStyle = "white";
@@ -158,12 +164,7 @@ window.Snake = window.Snake || {};
 
         model.startGame = function () {
             $('.status').text(model.countDown).css({ fontSize: '50px', color: model.player ? 'Red' : 'Blue' });
-            if (!$('.player1 h1').length) {
-                $('.player1').append('<h1>'+model.gameData.Player1Info.Name+'</h1>');
-                $('.player2').append('<h1>'+model.gameData.Player2Info.Name+'</h1>');
-                $('.player1').append('<img src="'+model.gameData.Player1Info.Image+'" />');
-                $('.player2').append('<img src="'+model.gameData.Player2Info.Image+'" />');
-            }
+
             if (model.gameStartTimer) {
                 clearTimeout(model.gameStartTimer);
             }
@@ -208,25 +209,19 @@ window.Snake = window.Snake || {};
 
 
         model.update = function (data) {
-            model.snake_array = data.player1Snake;
-            model.snake_arrey_player_two = data.player2Snake;
-
             if (data.status == 'start') {
                 model.food = data.food;
-
-                if (data.player1 == model.playersInfo.Id) {
-                    model.player = 0;
-                } else {
-                    model.player = 1;
-                }
-
                 model.startGame()
-
             }
-
 
             if (data.status == 'update') {
                 if (data.player != model.player) {
+                    if (model.player) {
+                        model.snake_array = data.player1Snake;
+                    } else {
+                        model.snake_arrey_player_two = data.player2Snake;
+                    }
+
                     if (data.player) {
                         model.d2 = data.dir;
                     } else {
@@ -257,22 +252,29 @@ window.Snake = window.Snake || {};
                     $('p.status').text('Waiting for second player...');
 
                     model.socket.emit("handshake", model.playersInfo);
+                    if (!model.isInitiSocketCompleted) {
+                        model.isInitiSocketCompleted = true;
+                        model.socket.on("pair", function (gameData) {
+                            model.gameData = gameData;
+                            model.player1Info({});
+                            model.player1Info(gameData.Player1Info);
+                            model.player2Info({});
+                            model.player2Info(gameData.Player2Info);
+                            model.roomIdClient = gameData.RoomId;
+                            model.player = gameData.Player;
+                            model.socket.emit("join", {roomId: gameData.RoomId, clientId: model.playersInfo.Id});
+                        });
 
-                    model.socket.on("pair", function (gameData) {
-                        model.gameData = gameData;
-                        model.roomIdClient = gameData.RoomId;
-                        model.socket.emit("join", { roomId: gameData.RoomId, clientId: model.playersInfo.Id });
-                    });
+                        model.socket.on("messageUpdate", function (data) {
+                            model.chatMessages.push(data);
 
-                    model.socket.on("messageUpdate", function (data) {
-                        $('#chat-screen').append($('<li>').html(data));
-
-                    });
-                    model.socket.on("status", function (data) {
-                        if (data.packageNo > model.packageNo) {
-                            model.update(data);
-                        }
-                    });
+                        });
+                        model.socket.on("status", function (data) {
+                            if (data.packageNo > model.packageNo) {
+                                model.update(data);
+                            }
+                        });
+                    }
                 });
             });
         }
@@ -284,19 +286,26 @@ window.Snake = window.Snake || {};
             }
         }
 
+        model.sendMessageClick = function () {
+            model.sendMessage(model.messageText());
+            model.messageText('');
+        }
+
         return model;
     }
 
     $(document).ready(function () {
         var model = new Snake.Game();
+        ko.applyBindings(model, $('.body')[0]);
 
         var canvas = $("#canvas")[0];
+        w = 450;
+        h = 450;
         ctx = canvas.getContext("2d"),
-        w = $("#canvas").width(),
-        h = $("#canvas").height();
-        $(".game-screen").hide();
+
         model.initSocket();
         $(document).keydown(function (e) {
+
             var key = e.which;
             var status = '';
             if (model.player) {
@@ -305,17 +314,29 @@ window.Snake = window.Snake || {};
                 status = model.d;
             }
 
-            if (key == "37" && status != "right") model.updateStatus("left");
-            else if (key == "38" && status != "down") model.updateStatus("up");
-            else if (key == "39" && status != "left") model.updateStatus("right");
-            else if (key == "40" && status != "up") model.updateStatus("down");
+            if (key == "37" && status != "right") {
+                model.updateStatus("left");
+                e.preventDefault();
+            }
+            else if (key == "38" && status != "down") {
+                model.updateStatus("up");
+                e.preventDefault();
+            }
+            else if (key == "39" && status != "left") {
+                model.updateStatus("right");
+                e.preventDefault();
+            }
+            else if (key == "40" && status != "up") {
+                model.updateStatus("down");
+                e.preventDefault();
+            }
+            else if (key =="13") {
+                $('.chat input').blur();
+                model.sendMessageClick();
+                $('.chat input').focus();
+            }
         });
 
-        $('.send-message').click(function () {
-            var message = $(this).prev().val();
-            model.sendMessage(message);
-            $(this).prev().val('');
-        });
         function facebookReady(){
             FB.init({
                 appId  : '131051383772578',
