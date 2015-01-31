@@ -12,38 +12,107 @@
         <script src="./js/social/social.js"></script>
         <script src="./js/game.js" type="text/javascript"></script>
         <style>
+            body {
+                font-family: Georgia;
+                float:left;
+            }
+            .game-screen {
+                width: 740px;
+                float: left;
+            }
+            header {
+                width: 100%;
+                float: left;
+            }
+            .player {
+                float: left;
+            }
+            .player h4 {
+                margin: 5px 0;
+            }
+            .player.two h4 {
+                text-align: right;
+            }
             .player img {
                 border: 4px solid Blue;
+                width: 70px;
+                float: left;
+                -webkit-border-radius: 10px;
+                -moz-border-radius: 10px;
+                border-radius: 10px;
+            }
+            .player.two {
+                float: right;
             }
             .player.two img {
                 border: 4px solid Red;
-            }
-            .game-screen {
-                width: 750px;
+                float: right;
             }
             canvas {
                 float: left;
-                margin-right: 30px;
+                margin: -40px 145px 25px;
+                width: 450px;
+                height: 450px;
+                z-index: 100;
+            }
+            .scores {
+                float: left;
+                margin-top: -360px;
+                width: 100%;
+                text-align: center;
+            }
+            .scores .block {
+                width: 100px;
+                float: left;
+            }
+            .scores .block h5 {
+                margin-bottom: 90px;
+            }
+            .scores .block.two {
+                float: right;
+            }
+            .chat {
+                height: 200px;
+                overflow-y: scroll;
+                float: left;
+                width: 100%;
+            }
+            .chat .chat-screen {
+                float: left;
             }
         </style>
 	</head>
 	<body>
         <div class="game-screen" style="display: none;">
+            <header>
+                <div class="player">
+                    <h4 data-bind="text: player1Info().Name"></h4>
+                    <img data-bind="attr: { src: player1Info().Image }"/>
+                </div>
+                <div class="player two">
+                    <h4 data-bind="text: $root.player2Info().Name"></h4>
+                    <img data-bind="attr: { src: $root.player2Info().Image }"/>
+                </div>
+            </header>
 		    <canvas id="canvas" width="450" height="450"></canvas>
-            <div class="player">
-                <img data-bind="attr: { src: player1Info().Image }"/>
-                <h2 data-bind="text: player1Info().Name"></h2>
+            <div class="scores">
+                <div class="block one">
+                    <h5>12</h5>
+                    <h6>3</h6>
+                </div>
+                <div class="block two">
+                    <h5>11</h5>
+                    <h6>2</h6>
+                </div>
             </div>
-            <div class="player two">
-                <img data-bind="attr: { src: $root.player2Info().Image }"/>
-                <h2 data-bind="text: $root.player2Info().Name"></h2>
-            </div>
-            <div class="chat">
-                <ul id="chat-screen" data-bind="foreach: chatMessages">
-                    <li data-bind="html: $data"></li>
-                </ul>
+            <div class="chat-wrap">
                 <input type="text" data-bind="value: messageText"/>
                 <a href="javascript:;" class="send-message" data-bind="click: sendMessageClick">Send Message</a>
+                <div class="chat">
+                    <ul id="chat-screen" data-bind="foreach: chatMessages">
+                        <li data-bind="html: $data"></li>
+                    </ul>
+                </div>
             </div>
         </div>
 		<div class="main-screen">

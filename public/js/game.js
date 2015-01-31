@@ -20,8 +20,8 @@ window.Snake = window.Snake || {};
             food: 0,
             score: 0,
             packageNo: -1,
-            socket: io.connect("https://snake-wars.herokuapp.com/", { resources: "socket.io" }),
-            //socket: io.connect("http://192.168.0.87:3000", { resources: "socket.io" }),
+            //socket: io.connect("https://snake-wars.herokuapp.com/", { resources: "socket.io" }),
+            socket: io.connect("http://192.168.0.87:3000", { resources: "socket.io" }),
             snake_array: [], //an array of cells to make up the snake
             snake_arrey_player_two: []
         }
@@ -267,7 +267,9 @@ window.Snake = window.Snake || {};
 
                         model.socket.on("messageUpdate", function (data) {
                             model.chatMessages.push(data);
-
+                            setTimeout(function () {
+                                $('.chat').scrollTop($('#chat-screen').height());
+                            }, 100);
                         });
                         model.socket.on("status", function (data) {
                             if (data.packageNo > model.packageNo) {
@@ -331,9 +333,9 @@ window.Snake = window.Snake || {};
                 e.preventDefault();
             }
             else if (key =="13") {
-                $('.chat input').blur();
+                $('.chat-wrap input').blur();
                 model.sendMessageClick();
-                $('.chat input').focus();
+                $('.chat-wrap input').focus();
             }
         });
 
