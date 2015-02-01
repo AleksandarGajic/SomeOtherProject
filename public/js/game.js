@@ -12,13 +12,19 @@ window.Snake = window.Snake || {};
             playersInfo: null,
             box_size: 45,
             speed: 150,
+            speedDelta: 25, //speed change
+            timeDelta: 36 * 1000, //evry 36 seconds change game speed
             roomIdClient: null,
             countDown: 3,
+            timer: ko.observable(0),
             d: 0,
             d2: 0,
             player: 0,
             food: 0,
-            score: 0,
+            score: ko.observable(0),
+            scoreTwo: ko.observable(0),
+            koScore: ko.observable(0),
+            koScoreTwo: ko.observable(0),
             packageNo: -1,
             //socket: io.connect("https://snake-wars.herokuapp.com/", { resources: "socket.io" }),
             socket: io.connect("http://192.168.0.87:3000", { resources: "socket.io" }),
@@ -29,38 +35,81 @@ window.Snake = window.Snake || {};
         $.extend(model, new Snake.Social(model));
 
         model.init = function () {
-            model.d = "right"; //default direction
-            model.d2 = "left"; //default direction second player
-
             model.create_snakes();
             //finally lets display the score
-            model.score = 0;
-
+            model.timer(3 * 60 * 1000); //3 minutes
+            model.score(0);
+            model.scoreTwo(0);
+            model.koScore(0);
+            model.koScoreTwo(0);
+            model.timeChange = model.timer() - model.timeDelta;
             //Lets move the snake now using a timer which will trigger the paint function
             //every 60ms
             if (typeof game_loop != "undefined") clearInterval(game_loop);
             game_loop = setInterval(model.paint, model.speed);
         }
 
+        model.getTime = ko.computed({
+            read: function(){
+                var time = model.timer();
+                var minutes = Math.floor(time / 60000);
+                time -= minutes * 60000;
+                var seconds = Math.floor(time / 1000);
+                return minutes + ":" + (seconds < 10 ? ('0' + seconds) : seconds);
+            }
+        })
+
         model.create_snakes = function () {
+            model.createP1Snake();
+            model.createP2Snake();
+        }
+
+        model.createP1Snake = function () {
+            model.d = "right"; //default direction
             var length = 5; //Length of the snake
             model.snake_array = []; //Empty array to start with
             for (var i = length - 1; i >= 0; i--) {
                 //This will create a horizontal snake starting from the top left
                 model.snake_array.push({ x: i, y: 0 });
             }
+        }
 
+        model.createP2Snake = function () {
+            model.d2 = "left"; //default direction second player
+            var length = 5; //Length of the snake
             model.snake_arrey_player_two = []; //Empty array to start with
             for (var i = model.box_size - length; i < model.box_size; i++) {
                 //This will create a horizontal snake starting from the top left
                 model.snake_arrey_player_two.push({ x: i, y: 0 });
             }
         }
-
         //Lets paint the snake now
         model.paint = function () {
             //check for update
+            var time = model.timer();
+            time -= model.speed;
 
+            if (time <= 0) { //Game OVer
+                clearInterval(game_loop);
+                ctx.fillStyle = "black";
+                ctx.fillText("Game Over", 10, 50);
+                ctx.fill();
+                $('.status').text('');
+                $('.start-game').show();
+                $('.main-screen').show();
+                return;
+            }
+
+            model.timer(time);
+            if (time < model.timeChange) {
+                model.timeChange -= model.timeDelta;
+                model.speed -= model.speedDelta;
+                clearInterval(game_loop);
+                game_loop = setInterval(model.paint, model.speed);
+            }
+
+            var crashedP1 = 0;
+            var crashedP2 = 0;
             //To avoid the snake trail we need to paint the BG on every frame
             //Lets paint the canvas now
             ctx.fillStyle = "white";
@@ -90,17 +139,38 @@ window.Snake = window.Snake || {};
             else if (model.d2 == "down") ny2++;
 
             if (nx == -1 || nx == w / model.cw || ny == -1 || ny == h / model.cw || model.check_collision(nx, ny, model.snake_array) || model.check_collision(nx, ny, model.snake_arrey_player_two)) {
-                clearInterval(game_loop);
+                crashedP1 = 1;
+                if (!model.player) {
+                    model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'crashed' });
+                }
+                //clearInterval(game_loop);
+                //
+                //game_loop = setInterval(model.paint, model.speed);
+
+                /*
+                //
+
                 ctx.fillStyle = "black";
                 ctx.fillText("Game Over Player 2 wins!!", 10, 50);
                 ctx.fill();
                 $('.status').text('');
                 $('.start-game').show();
-                $('.main-screen').show();
+                $('.main-screen').show();*/
             }
 
             if (nx2 == -1 || nx2 == w / model.cw || ny2 == -1 || ny2 == h / model.cw || model.check_collision(nx2, ny2, model.snake_arrey_player_two) || model.check_collision(nx2, ny2, model.snake_array)) {
+                if (model.player) {
+                    model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'crashed' });
+                }
                 //restart game
+                //clearInterval(game_loop);
+                //model.createP2Snake();
+                crashedP2 = 2;
+                //game_loop = setInterval(model.paint, model.speed);
+
+
+                //model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'ko', score: model.player ? model.scoreTwo() : model.score(), player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
+                /*
                 clearInterval(game_loop);
                 ctx.fillStyle = "black";
                 ctx.fillText("Game Over. Player 1 wins!!", 10, 50);
@@ -108,43 +178,77 @@ window.Snake = window.Snake || {};
                 $('.status').text('');
                 $('.start-game').show();
                 $('.main-screen').show();
+                */
             }
 
+            if (crashedP1) {
+                model.createP1Snake();
+            }
+
+            if (crashedP2) {
+                model.createP2Snake();
+            }
+
+            if (crashedP1 && crashedP2) {
+                model.paint_cell(model.food.x, model.food.y, "black");
+                return;
+            }
             //Player 1 eats food
 
 
             //Player 2 eats food
             var tail, tail2, eaten;
             if (model.player) {
-                if (nx2 == model.food.x && ny2 == model.food.y) {
-                    var tail2 = { x: nx2, y: ny2 };
-                    model.score++;
-                    eaten = true;
-                } else {
-                    tail2 = model.snake_arrey_player_two.pop();
-                    tail2.x = nx2; tail2.y = ny2;
+                if (!crashedP2) {
+                    if (nx2 == model.food.x && ny2 == model.food.y) {
+                        var tail2 = {x: nx2, y: ny2};
+                        var score = model.scoreTwo();
+                        model.scoreTwo(++score);
+                        eaten = true;
+                    } else {
+                        tail2 = model.snake_arrey_player_two.pop();
+                        tail2.x = nx2;
+                        tail2.y = ny2;
+                    }
                 }
-                tail = model.snake_array.pop(); //pops out the last cell
-                tail.x = nx; tail.y = ny;
-            } else {
-                tail2 = model.snake_arrey_player_two.pop();
-                tail2.x = nx2; tail2.y = ny2;
-                if (nx == model.food.x && ny == model.food.y) {
-                    var tail = { x: nx, y: ny };
-                    model.score++;
-                    eaten = true;
-                }
-                else {
+
+                if (!crashedP1) {
                     tail = model.snake_array.pop(); //pops out the last cell
-                    tail.x = nx; tail.y = ny;
+                    tail.x = nx;
+                    tail.y = ny;
+                }
+            } else {
+                if (!crashedP1) {
+                    if (nx == model.food.x && ny == model.food.y) {
+                        var tail = {x: nx, y: ny};
+                        var score = model.score();
+                        model.score(++score);
+                        eaten = true;
+                    }
+                    else {
+                        tail = model.snake_array.pop(); //pops out the last cell
+                        tail.x = nx;
+                        tail.y = ny;
+                    }
+                }
+
+                if (!crashedP2) {
+                    tail2 = model.snake_arrey_player_two.pop();
+                    tail2.x = nx2;
+                    tail2.y = ny2;
                 }
             }
 
-            model.snake_array.unshift(tail);
-            model.snake_arrey_player_two.unshift(tail2);
+            if (!crashedP1) {
+                model.snake_array.unshift(tail);
+            }
+
+            if (!crashedP2) {
+                model.snake_arrey_player_two.unshift(tail2);
+            }
 
             if (eaten) {
-                model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'food', player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
+                model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'food', score: model.player ? model.scoreTwo() : model.score(), player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
             }
 
             for (var i = 0; i < model.snake_arrey_player_two.length; i++) {
@@ -158,8 +262,6 @@ window.Snake = window.Snake || {};
             }
 
             model.paint_cell(model.food.x, model.food.y, "black");
-            var score_text = "Score: " + model.score;
-            ctx.fillText(score_text, 5, h - 5);
         }
 
         model.startGame = function () {
@@ -209,6 +311,14 @@ window.Snake = window.Snake || {};
 
 
         model.update = function (data) {
+            if (data.status =='crashed'){
+                    if (model.player) { //Player two crashed
+                        model.koScore(++model.koScore());
+                    } else {
+                        model.koScoreTwo(++model.koScoreTwo());
+                    }
+            }
+
             if (data.status == 'start') {
                 model.food = data.food;
                 model.startGame()
@@ -232,6 +342,19 @@ window.Snake = window.Snake || {};
 
             if (data.status == 'food') {
                 model.food = data.food;
+                if (data.player != model.player) {
+                    if (model.player) {
+                        model.snake_array = data.player1Snake;
+                    } else {
+                        model.snake_arrey_player_two = data.player2Snake;
+                    }
+
+                    if (data.player) {
+                        model.scoreTwo(data.score);
+                    } else {
+                        model.score(data.score);
+                    }
+                }
             }
         }
 

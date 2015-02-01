@@ -1,0 +1,74 @@
+body {
+    font-family: Georgia;
+    float:left;
+}
+.game-screen {
+    width: 740px;
+    float: left;
+}
+header {
+    width: 100%;
+    float: left;
+}
+.player {
+    float: left;
+}
+.player h4 {
+    margin: 5px 0;
+}
+.player.two h4 {
+    text-align: right;
+}
+.player img {
+    border: 4px solid Blue;
+    width: 70px;
+    float: left;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+.player.two {
+    float: right;
+}
+.clock {
+    position: absolute;
+    top: 0px;
+    left: 340px;
+}
+
+.player.two img {
+    border: 4px solid Red;
+    float: right;
+}
+canvas {
+    float: left;
+    margin: -40px 145px 25px;
+    width: 450px;
+    height: 450px;
+    z-index: 100;
+}
+.scores {
+    float: left;
+    margin-top: -360px;
+    width: 100%;
+    text-align: center;
+}
+.scores .block {
+    width: 100px;
+    float: left;
+}
+.scores .block h5 {
+    margin-bottom: 90px;
+}
+.scores .block.two {
+    float: right;
+}
+.chat {
+    height: 200px;
+    overflow-y: scroll;
+    float: left;
+    width: 100%;
+}
+.chat .chat-screen {
+    float: left;
+}
