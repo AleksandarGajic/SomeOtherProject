@@ -26,8 +26,8 @@ window.Snake = window.Snake || {};
             koScore: ko.observable(0),
             koScoreTwo: ko.observable(0),
             packageNo: -1,
-            //socket: io.connect("https://snake-wars.herokuapp.com/", { resources: "socket.io" }),
-            socket: io.connect("http://192.168.0.87:3000", { resources: "socket.io" }),
+            socket: io.connect("https://snake-wars.herokuapp.com/", { resources: "socket.io" }),
+            //socket: io.connect("http://192.168.0.87:3000", { resources: "socket.io" }),
             snake_array: [], //an array of cells to make up the snake
             snake_arrey_player_two: []
         }
@@ -311,50 +311,51 @@ window.Snake = window.Snake || {};
 
 
         model.update = function (data) {
-            if (data.status =='crashed'){
-                    if (model.player) { //Player two crashed
-                        model.koScore(++model.koScore());
-                    } else {
-                        model.koScoreTwo(++model.koScoreTwo());
-                    }
-            }
+            switch (data.status) {
+                case 'start':
+                    model.food = data.food;
+                    model.startGame()
+                    break;
+                case 'update':
+                    if (data.player != model.player) {
+                        if (model.player) {
+                            model.snake_array = data.player1Snake;
+                        } else {
+                            model.snake_arrey_player_two = data.player2Snake;
+                        }
 
-            if (data.status == 'start') {
-                model.food = data.food;
-                model.startGame()
-            }
-
-            if (data.status == 'update') {
-                if (data.player != model.player) {
-                    if (model.player) {
-                        model.snake_array = data.player1Snake;
-                    } else {
-                        model.snake_arrey_player_two = data.player2Snake;
+                        if (data.player) {
+                            model.d2 = data.dir;
+                        } else {
+                            model.d = data.dir;
+                        }
                     }
+                    break;
+                case 'food':
+                    model.food = data.food;
+                    if (data.player != model.player) {
+                        if (model.player) {
+                            model.snake_array = data.player1Snake;
+                        } else {
+                            model.snake_arrey_player_two = data.player2Snake;
+                        }
 
-                    if (data.player) {
-                        model.d2 = data.dir;
-                    } else {
-                        model.d = data.dir;
+                        if (data.player) {
+                            model.scoreTwo(data.score);
+                        } else {
+                            model.score(data.score);
+                        }
                     }
-                }
-            }
-
-            if (data.status == 'food') {
-                model.food = data.food;
-                if (data.player != model.player) {
-                    if (model.player) {
-                        model.snake_array = data.player1Snake;
+                    break;
+                case 'crashed':
+                    if (data.player) { //Player two crashed
+                        var koScoreTemp = model.koScore();
+                        model.koScore(++koScoreTemp);
                     } else {
-                        model.snake_arrey_player_two = data.player2Snake;
+                        var koScoreTemp = model.koScoreTwo();
+                        model.koScoreTwo(++koScoreTemp);
                     }
-
-                    if (data.player) {
-                        model.scoreTwo(data.score);
-                    } else {
-                        model.score(data.score);
-                    }
-                }
+                    break;
             }
         }
 
