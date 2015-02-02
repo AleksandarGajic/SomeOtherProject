@@ -33,6 +33,17 @@ window.Snake = window.Snake || {};
         }
 
         $.extend(model, new Snake.Social(model));
+        $.extend(model, new Snake.Server(model));
+
+        model.getTime = ko.computed({
+            read: function(){
+                var time = model.timer();
+                var minutes = Math.floor(time / 60000);
+                time -= minutes * 60000;
+                var seconds = Math.floor(time / 1000);
+                return minutes + ":" + (seconds < 10 ? ('0' + seconds) : seconds);
+            }
+        })
 
         model.init = function () {
             model.create_snakes();
@@ -48,16 +59,6 @@ window.Snake = window.Snake || {};
             if (typeof game_loop != "undefined") clearInterval(game_loop);
             game_loop = setInterval(model.paint, model.speed);
         }
-
-        model.getTime = ko.computed({
-            read: function(){
-                var time = model.timer();
-                var minutes = Math.floor(time / 60000);
-                time -= minutes * 60000;
-                var seconds = Math.floor(time / 1000);
-                return minutes + ":" + (seconds < 10 ? ('0' + seconds) : seconds);
-            }
-        })
 
         model.create_snakes = function () {
             model.createP1Snake();
@@ -83,7 +84,7 @@ window.Snake = window.Snake || {};
                 model.snake_arrey_player_two.push({ x: i, y: 0 });
             }
         }
-        //Lets paint the snake now
+
         model.paint = function () {
             //check for update
             var time = model.timer();
@@ -138,62 +139,34 @@ window.Snake = window.Snake || {};
             else if (model.d2 == "up") ny2--;
             else if (model.d2 == "down") ny2++;
 
+            //Check for crash P1
             if (nx == -1 || nx == w / model.cw || ny == -1 || ny == h / model.cw || model.check_collision(nx, ny, model.snake_array) || model.check_collision(nx, ny, model.snake_arrey_player_two)) {
                 crashedP1 = 1;
-                if (!model.player) {
-                    model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'crashed' });
-                }
-                //clearInterval(game_loop);
-                //
-                //game_loop = setInterval(model.paint, model.speed);
-
-                /*
-                //
-
-                ctx.fillStyle = "black";
-                ctx.fillText("Game Over Player 2 wins!!", 10, 50);
-                ctx.fill();
-                $('.status').text('');
-                $('.start-game').show();
-                $('.main-screen').show();*/
             }
 
+            //Check for crash P2
             if (nx2 == -1 || nx2 == w / model.cw || ny2 == -1 || ny2 == h / model.cw || model.check_collision(nx2, ny2, model.snake_arrey_player_two) || model.check_collision(nx2, ny2, model.snake_array)) {
-                if (model.player) {
-                    model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'crashed' });
-                }
-                //restart game
-                //clearInterval(game_loop);
-                //model.createP2Snake();
                 crashedP2 = 2;
-                //game_loop = setInterval(model.paint, model.speed);
-
-
-                //model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'ko', score: model.player ? model.scoreTwo() : model.score(), player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
-                /*
-                clearInterval(game_loop);
-                ctx.fillStyle = "black";
-                ctx.fillText("Game Over. Player 1 wins!!", 10, 50);
-                ctx.fill();
-                $('.status').text('');
-                $('.start-game').show();
-                $('.main-screen').show();
-                */
             }
 
             if (crashedP1) {
                 model.createP1Snake();
+                if (!model.player) {
+                    model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'crashed', player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
+                }
             }
 
             if (crashedP2) {
                 model.createP2Snake();
+                if (model.player) {
+                    model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'crashed', player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
+                }
             }
 
             if (crashedP1 && crashedP2) {
                 model.paint_cell(model.food.x, model.food.y, "black");
                 return;
             }
-            //Player 1 eats food
 
 
             //Player 2 eats food
@@ -290,7 +263,6 @@ window.Snake = window.Snake || {};
             }, 1000);
         };
 
-        //Lets first create a generic function to paint cells
         model.paint_cell = function (x, y, color) {
             ctx.fillStyle = color;
             ctx.fillRect(x * model.cw, y * model.cw, model.cw, model.cw);
@@ -307,109 +279,6 @@ window.Snake = window.Snake || {};
                     return true;
             }
             return false;
-        }
-
-
-        model.update = function (data) {
-            switch (data.status) {
-                case 'start':
-                    model.food = data.food;
-                    model.startGame()
-                    break;
-                case 'update':
-                    if (data.player != model.player) {
-                        if (model.player) {
-                            model.snake_array = data.player1Snake;
-                        } else {
-                            model.snake_arrey_player_two = data.player2Snake;
-                        }
-
-                        if (data.player) {
-                            model.d2 = data.dir;
-                        } else {
-                            model.d = data.dir;
-                        }
-                    }
-                    break;
-                case 'food':
-                    model.food = data.food;
-                    if (data.player != model.player) {
-                        if (model.player) {
-                            model.snake_array = data.player1Snake;
-                        } else {
-                            model.snake_arrey_player_two = data.player2Snake;
-                        }
-
-                        if (data.player) {
-                            model.scoreTwo(data.score);
-                        } else {
-                            model.score(data.score);
-                        }
-                    }
-                    break;
-                case 'crashed':
-                    if (data.player) { //Player two crashed
-                        var koScoreTemp = model.koScore();
-                        model.koScore(++koScoreTemp);
-                    } else {
-                        var koScoreTemp = model.koScoreTwo();
-                        model.koScoreTwo(++koScoreTemp);
-                    }
-                    break;
-            }
-        }
-
-        model.updateStatus = function (direction) {
-            if (model.player) {
-                model.d2 = direction;
-            } else {
-                model.d = direction;
-            }
-
-            model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, dir: direction, status: 'move', player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
-        }
-
-        model.initSocket = function () {
-            model.socket.on("connect", function () {
-                $('a.start-game').click(function () {
-                    $(this).hide();
-                    $('p.status').text('Waiting for second player...');
-
-                    model.socket.emit("handshake", model.playersInfo);
-                    if (!model.isInitiSocketCompleted) {
-                        model.isInitiSocketCompleted = true;
-                        model.socket.on("pair", function (gameData) {
-                            model.gameData = gameData;
-                            model.player1Info({});
-                            model.player1Info(gameData.Player1Info);
-                            model.player2Info({});
-                            model.player2Info(gameData.Player2Info);
-                            model.roomIdClient = gameData.RoomId;
-                            model.player = gameData.Player;
-                            model.socket.emit("join", {roomId: gameData.RoomId, clientId: model.playersInfo.Id});
-                        });
-
-                        model.socket.on("messageUpdate", function (data) {
-                            model.chatMessages.push(data);
-                            setTimeout(function () {
-                                $('.chat').scrollTop($('#chat-screen').height());
-                            }, 100);
-                        });
-                        model.socket.on("status", function (data) {
-                            if (data.packageNo > model.packageNo) {
-                                model.update(data);
-                            }
-                        });
-                    }
-                });
-            });
-        }
-
-        model.sendMessage = function (message) {
-            if (message) {
-                var message = '<strong>'+model.playersInfo.Name+':</strong> ' + message;
-                model.socket.emit('sendMessage', { roomId: model.roomIdClient, message: message});
-            }
         }
 
         model.sendMessageClick = function () {
