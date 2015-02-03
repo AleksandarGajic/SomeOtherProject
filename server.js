@@ -130,6 +130,7 @@ io.sockets.on('connection', function (socket) {
 })
 .on('disconnect', function (socket) {
     var id = socket.store.data.clientId;
+    console.log(id);
     if (id && clients[id]) {
         clients[id] = null;
         delete clients[id];

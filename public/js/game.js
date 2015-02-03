@@ -2,19 +2,25 @@ window.Snake = window.Snake || {};
 (function ($) {
     Snake.Game = function () {
         var model = {
+            game_loop: null,
+            playerMoved: false,
+            statusText: ko.observable(''),
             messageText: ko.observable(''),
             chatMessages: ko.observableArray([]),
             player1Info: ko.observable({}),
             player2Info: ko.observable({}),
+            countDownText: ko.observable(''),
             cw: 10,
             gameData: {},
             gameStartTimer: null,
             playersInfo: null,
             box_size: 45,
+            startSpeed: 150,
             speed: 150,
-            speedDelta: 25, //speed change
-            timeDelta: 36 * 1000, //evry 36 seconds change game speed
+            speedDelta: 25, //speed delta change
+            timeDelta: 24 * 1000, //evry 24 seconds change game speed
             roomIdClient: null,
+            gamePlayTimeMinutes: 2,
             countDown: 3,
             timer: ko.observable(0),
             d: 0,
@@ -46,18 +52,22 @@ window.Snake = window.Snake || {};
         })
 
         model.init = function () {
-            model.create_snakes();
+            model.speed = model.startSpeed;
             //finally lets display the score
-            model.timer(3 * 60 * 1000); //3 minutes
+            model.timer(model.gamePlayTimeMinutes * 60 * 1000 + model.startSpeed); //2 minutes plus start speed for first paint
             model.score(0);
             model.scoreTwo(0);
             model.koScore(0);
             model.koScoreTwo(0);
             model.timeChange = model.timer() - model.timeDelta;
+            model.create_snakes();
             //Lets move the snake now using a timer which will trigger the paint function
-            //every 60ms
-            if (typeof game_loop != "undefined") clearInterval(game_loop);
-            game_loop = setInterval(model.paint, model.speed);
+            model.paint();
+        }
+
+        model.startLoop = function () {
+            if (model.game_loop) clearInterval(model.game_loop);
+            model.game_loop = setInterval(model.paint, model.speed);
         }
 
         model.create_snakes = function () {
@@ -87,13 +97,31 @@ window.Snake = window.Snake || {};
 
         model.paint = function () {
             //check for update
+            model.playerMoved = false;
             var time = model.timer();
             time -= model.speed;
 
-            if (time <= 0) { //Game OVer
-                clearInterval(game_loop);
+            if (time <= 0 && model.game_loop) { //Game OVer
+                clearInterval(model.game_loop);
                 ctx.fillStyle = "black";
-                ctx.fillText("Game Over", 10, 50);
+                if (model.koScore() == model.koScoreTwo) {
+                    if (model.score() == model.scoreTwo()) {
+                        ctx.fillText("Game Over!! Draw!", 10, 50);
+                    } else {
+                        if (model.score() > model.scoreTwo()) {
+                            ctx.fillText("Game Over!! Player 1 Wins!", 10, 50);
+                        } else {
+                            ctx.fillText("Game Over!! Player 2 Wins!", 10, 50);
+                        }
+                    }
+                } else {
+                    if (model.koScore() > model.koScoreTwo()) {
+                        ctx.fillText("Game Over!! Player 1 Wins!", 10, 50);
+                    } else {
+                        ctx.fillText("Game Over!! Player 2 Wins!", 10, 50);
+                    }
+                }
+
                 ctx.fill();
                 $('.status').text('');
                 $('.start-game').show();
@@ -105,15 +133,16 @@ window.Snake = window.Snake || {};
             if (time < model.timeChange) {
                 model.timeChange -= model.timeDelta;
                 model.speed -= model.speedDelta;
-                clearInterval(game_loop);
-                game_loop = setInterval(model.paint, model.speed);
+                clearInterval(model.game_loop);
+                model.game_loop = setInterval(model.paint, model.speed);
             }
 
             var crashedP1 = 0;
             var crashedP2 = 0;
             //To avoid the snake trail we need to paint the BG on every frame
             //Lets paint the canvas now
-            ctx.fillStyle = "white";
+            //ctx.fillStyle = "#eee";
+            ctx.fillStyle = "#EEE";
             ctx.fillRect(0, 0, w, h);
             ctx.strokeStyle = "black";
             ctx.strokeRect(0, 0, w, h);
@@ -152,19 +181,19 @@ window.Snake = window.Snake || {};
             if (crashedP1) {
                 model.createP1Snake();
                 if (!model.player) {
-                    model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'crashed', player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
+                    model.emitMessage('updateStatus', {status: 'crashed'});
                 }
             }
 
             if (crashedP2) {
                 model.createP2Snake();
                 if (model.player) {
-                    model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'crashed', player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
+                    model.emitMessage('updateStatus', {status: 'crashed'});
                 }
             }
 
             if (crashedP1 && crashedP2) {
-                model.paint_cell(model.food.x, model.food.y, "black");
+                model.paint_cell(model.food.x, model.food.y, "#000");
                 return;
             }
 
@@ -221,7 +250,7 @@ window.Snake = window.Snake || {};
             }
 
             if (eaten) {
-                model.socket.emit('updateStatus', { roomId: model.roomIdClient, player: model.player, status: 'food', score: model.player ? model.scoreTwo() : model.score(), player1Snake: model.snake_array, player2Snake: model.snake_arrey_player_two });
+                model.emitMessage('updateStatus', {status: 'food', score: model.player ? model.scoreTwo() : model.score()});
             }
 
             for (var i = 0; i < model.snake_arrey_player_two.length; i++) {
@@ -234,11 +263,17 @@ window.Snake = window.Snake || {};
                 model.paint_cell(c.x, c.y, "blue");
             }
 
-            model.paint_cell(model.food.x, model.food.y, "black");
+            model.paint_cell(model.food.x, model.food.y, "#000");
         }
 
         model.startGame = function () {
-            $('.status').text(model.countDown).css({ fontSize: '50px', color: model.player ? 'Red' : 'Blue' });
+            Snake.Common.showGameRoom();
+            model.countDownText(model.countDown)
+            if (model.player) {
+                $('.count-down').addClass('red');
+            } else {
+                $('.count-down').removeClass('red');
+            }
 
             if (model.gameStartTimer) {
                 clearTimeout(model.gameStartTimer);
@@ -246,15 +281,14 @@ window.Snake = window.Snake || {};
 
             model.gameStartTimer = setTimeout(function () {
                 model.countDown--;
-                $('.status').text(model.countDown);
+                model.countDownText(model.countDown)
                 if (model.countDown == 0) {
                     clearTimeout(model.gameStartTimer);
-                    $('.status').text('Go...');
+                    model.countDownText('Go!');
                     setTimeout(function () {
-                        $('.main-screen').hide();
-                        $(".game-screen").show();
                         model.countDown = 3;
-                        model.init();
+                        model.countDownText('');
+                        model.startLoop();
                     }, 1000);
 
                 } else {
@@ -266,8 +300,8 @@ window.Snake = window.Snake || {};
         model.paint_cell = function (x, y, color) {
             ctx.fillStyle = color;
             ctx.fillRect(x * model.cw, y * model.cw, model.cw, model.cw);
-            ctx.strokeStyle = "white";
-            ctx.strokeRect(x * model.cw, y * model.cw, model.cw, model.cw);
+            //ctx.strokeStyle = "white";
+            //ctx.strokeRect(x * model.cw, y * model.cw, model.cw, model.cw);
             ctx.fillStyle = "black";
         }
 
@@ -309,23 +343,24 @@ window.Snake = window.Snake || {};
                 status = model.d;
             }
 
-            if (key == "37" && status != "right") {
-                model.updateStatus("left");
-                e.preventDefault();
+            if (model.game_loop && !model.playerMoved) {
+                model.playerMoved = true;
+                if (key == "37" && status != "right") {
+                    model.updateStatus("left");
+                    e.preventDefault();
+                } else if (key == "38" && status != "down") {
+                    model.updateStatus("up");
+                    e.preventDefault();
+                } else if (key == "39" && status != "left") {
+                    model.updateStatus("right");
+                    e.preventDefault();
+                } else if (key == "40" && status != "up") {
+                    model.updateStatus("down");
+                    e.preventDefault();
+                }
             }
-            else if (key == "38" && status != "down") {
-                model.updateStatus("up");
-                e.preventDefault();
-            }
-            else if (key == "39" && status != "left") {
-                model.updateStatus("right");
-                e.preventDefault();
-            }
-            else if (key == "40" && status != "up") {
-                model.updateStatus("down");
-                e.preventDefault();
-            }
-            else if (key =="13") {
+
+            if (key =="13") {
                 $('.chat-wrap input').blur();
                 model.sendMessageClick();
                 $('.chat-wrap input').focus();

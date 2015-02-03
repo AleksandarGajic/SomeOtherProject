@@ -4,14 +4,17 @@
         /**
         * Show game Page
         */
-        showGame: function () {
+        showGameRoom: function () {
+            $('.game-screen').show();
+            $('.main-screen').hide();
         },
         
         /**
         * Hide game Page
         */
-        hideGame: function () {
-            
+        hideGameRoom: function () {
+            $('.game-screen').hide();
+            $('.main-screen').show();
         }
     }
-});
+}($));

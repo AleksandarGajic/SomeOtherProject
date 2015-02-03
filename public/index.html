@@ -8,52 +8,62 @@
 		<script src="./js/lib/socket.io.min.js" type="text/javascript"></script>
         <script src="./js/lib/socket.io.min.js" type="text/javascript"></script>
         <script src="./js/lib/knockout.js" type="text/javascript"></script>
-        <script src="./js/common/common.js"></script>
-        <script src="./js/social/social.js"></script>
-        <script src="./js/server/server.js"></script>
+        <script src="./js/common/common.js" type="text/javascript"></script>
+        <script src="./js/social/social.js" type="text/javascript"></script>
+        <script src="./js/server/server.js" type="text/javascript"></script>
         <script src="./js/game.js" type="text/javascript"></script>
         <link href="./css/style.css" type="text/css" rel="stylesheet" media="screen">
 	</head>
 	<body>
-        <div class="game-screen" style="display: none;">
+        <div class="content-wrapper">
             <header>
-                <div class="player">
-                    <h4 data-bind="text: player1Info().Name"></h4>
-                    <img data-bind="attr: { src: player1Info().Image }"/>
-                </div>
-                <div class="clock">
-                    <h2 data-bind="text: getTime()"></h2>
-                </div>
-                <div class="player two">
-                    <h4 data-bind="text: $root.player2Info().Name"></h4>
-                    <img data-bind="attr: { src: $root.player2Info().Image }"/>
-                </div>
+                <p>
+                SNAKE WARS
+                </p>
+                <a href="javascript:;" class="start-game" style="display: none;">Start new game</a>
             </header>
-		    <canvas id="canvas" width="450" height="450"></canvas>
-            <div class="scores">
-                <div class="block one">
-                    <h5 data-bind="text: 'score: ' + score()"></h5>
-                    <h6 data-bind="text: 'KO: ' + koScore()"></h6>
+            <div class="game-screen" style="display: none;">
+                <div class="game-header">
+                    <div class="player">
+                        <h4 data-bind="text: player1Info().Name"></h4>
+                        <img data-bind="attr: { src: player1Info().Image }"/>
+                    </div>
+                    <div class="clock">
+                        <h2 data-bind="text: getTime()"></h2>
+                    </div>
+                    <div class="player two">
+                        <h4 data-bind="text: $root.player2Info().Name"></h4>
+                        <img data-bind="attr: { src: $root.player2Info().Image }"/>
+                    </div>
                 </div>
-                <div class="block two">
-                    <h5 data-bind="text: 'score: ' + scoreTwo()"></h5>
-                    <h6 data-bind="text: 'KO: ' + koScoreTwo()"></h6>
+                <canvas id="canvas" width="450" height="450"></canvas>
+                <div class="scores">
+                    <div class="block one">
+                        <h5 data-bind="text: 'score: ' + score()"></h5>
+                        <h6 data-bind="text: 'KO: ' + koScore()"></h6>
+                    </div>
+                    <div class="block two">
+                        <h5 data-bind="text: 'score: ' + scoreTwo()"></h5>
+                        <h6 data-bind="text: 'KO: ' + koScoreTwo()"></h6>
+                    </div>
                 </div>
+                <div class="chat-wrap">
+                    <input type="text" data-bind="value: messageText"/>
+                    <a href="javascript:;" class="send-message" data-bind="click: sendMessageClick">Send Message</a>
+                    <div class="chat-inner">
+                        <div class="chat">
+                            <ul id="chat-screen" data-bind="foreach: chatMessages">
+                                <li data-bind="html: $data"></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <p class="count-down" data-bind="text: countDownText"></p>
             </div>
-            <div class="chat-wrap">
-                <input type="text" data-bind="value: messageText"/>
-                <a href="javascript:;" class="send-message" data-bind="click: sendMessageClick">Send Message</a>
-                <div class="chat">
-                    <ul id="chat-screen" data-bind="foreach: chatMessages">
-                        <li data-bind="html: $data"></li>
-                    </ul>
-                </div>
+            <div class="main-screen">
+                <p class="status" data-bind="text: statusText"></p>
             </div>
         </div>
-		<div class="main-screen">
-			<a href="javascript:;" class="start-game" style="display: none;">Start new game</a>
-			<p class="status"></p>
-		</div>
         <div id="fb-root"></div>
         <script src="//connect.facebook.net/en_US/sdk.js"></script>
 	</body>
